@@ -3,7 +3,7 @@ import { fileLoader } from "../fileLoader";
 
 const collections:any = {
 	"files": defineCollection({
-		loader: fileLoader({filepath: '/Users/jmreupsch/Documents/MD Vaults/Eminence of the Millenium/', pattern: '**.md'}),
+		loader: fileLoader({filepath: '/Users/jmreupsch/Documents/MD Vaults/Eminence of the Millenium/', pattern: '**/*.md'}),
 	})
 };
 

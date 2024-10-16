@@ -9,7 +9,7 @@ let collection = await getCollection("files");
 	collection.map((item) => (
 		<article>
 			<h2>{item.id}</h2>
-			<p>{item.body}</p>
+			<p>{JSON.stringify(item.data)}</p>
 		</article>
 	))
 }

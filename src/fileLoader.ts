@@ -1,6 +1,7 @@
 import type { DataStore, Loader, LoaderContext } from 'astro/loaders';
-import fs from 'fs';
-import { createHash } from 'crypto';
+import * as filePathFilter from '@jsdevtools/file-path-filter';
+import * as fs from 'fs';
+import path from 'path';
 
 // Define any options that the loader needs
 export function fileLoader(options: { filepath: string, pattern: string }): Loader {
@@ -8,21 +9,31 @@ export function fileLoader(options: { filepath: string, pattern: string }): Load
 		name: "file-loader",
 		load: async (context: LoaderContext): Promise<void> => {
 			try {
-				const files = fs.readdirSync(options.filepath, { recursive: true, withFileTypes: true });
+				const files = fs.readdirSync(options.filepath, { recursive: true, withFileTypes: true }).map(file => {
+					const cleanedPath = file.path.replace(options.filepath, '');
+					return cleanedPath + "/" + file.name
+				}).filter(filePathFilter.filePathFilter(options.pattern));
 				if (context.refreshContextData) context.store.clear();
 				for (const file of files) {
-					if (checkFilePathAgainstPattern(file.name, options.pattern)) {
-						const filePath = options.filepath + file.name;
-						const content = fs.readFileSync(filePath, 'utf-8');
-						const digest = context.generateDigest(content);
+					const relativeFilePath = path.relative("./", options.filepath) + "/" + file;
+					const content = fs.readFileSync(relativeFilePath, 'utf-8');
 
-						context.store.set({
-							id: file,
-							filePath: filePath,
-							data: content,
-							digest
-						});
-					}
+					const data = await context.parseData({
+						id: file,
+						data: {
+							content
+						},
+						filePath: relativeFilePath,
+					})
+
+					const digest = context.generateDigest(data);
+
+					context.store.set({
+						id: file,
+						filePath: relativeFilePath,
+						data,
+						digest
+					});
 				}
 
 				console.log("Loaded " + files.length + " files from " + options.filepath);
@@ -32,30 +43,4 @@ export function fileLoader(options: { filepath: string, pattern: string }): Load
 			}
 		}
 	}
-}
-
-function checkFilePathAgainstPattern(filePath: string, pattern: string): boolean {
-	// * is a wildcard
-	// ** is a recursive wildcard
-	const patternParts = pattern.split('/');
-	const filePathParts = filePath.split('/');
-
-	if (patternParts.length !== filePathParts.length) {
-		return false;
-	}
-
-	for (let i = 0; i < patternParts.length; i++) {
-		if (patternParts[i] === '**') {
-			// Recursive wildcard
-			continue;
-		} else if (patternParts[i] === '*') {
-			// Wildcard
-			continue;
-		} else if (patternParts[i] !== filePathParts[i]) {
-			return false;
-		}
-	}
-
-	return true;
-
 }
