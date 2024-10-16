@@ -11,7 +11,6 @@ export const refreshContent: AstroIntegration = {
 					res.end('Method Not Allowed');
 					return
 				}
-				console.log("AAAAA", refreshContent)
 				if (refreshContent) {
 					await refreshContent({
 						loaders: ['file-loader'],
